@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CE文件管理器 - 专业Android文件管理与逆向工程工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --pixel-green: #00ff41;
+            --pixel-blue: #00d4ff;
+            --pixel-pink: #ff0080;
+            --pixel-yellow: #ffd700;
+            --bg-dark: #0a0a0a;
+            --bg-card: #1a1a1a;
+            --text-light: #e0e0e0;
+            --text-gray: #888888;
+        }
+
+        body {
+            font-family: 'Courier New', 'Consolas', monospace;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* 像素网格背景 */
+        .pixel-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 255, 65, 0.02) 3px, rgba(0, 255, 65, 0.02) 6px),
+                repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(0, 255, 65, 0.02) 3px, rgba(0, 255, 65, 0.02) 6px);
+            animation: bgScroll 20s linear infinite;
+        }
+
+        @keyframes bgScroll {
+            0% { background-position: 0 0; }
+            100% { background-position: 60px 60px; }
+        }
+
+        /* 导航栏 */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 10, 10, 0.98);
+            backdrop-filter: blur(10px);
+            border-bottom: 3px solid var(--pixel-green);
+            z-index: 1000;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+        }
+
+        nav .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: var(--pixel-green);
+            text-shadow: 0 0 10px var(--pixel-green);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo::before {
+            content: '█';
+            animation: blink 1s infinite;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 25px;
+        }
+
+        nav a {
+            color: var(--text-light);
+            text-decoration: none;
+            transition: all 0.3s;
+            padding: 5px 12px;
+            border: 2px solid transparent;
+            font-size: 0.95em;
+        }
+
+        nav a:hover {
+            color: var(--pixel-green);
+            border: 2px solid var(--pixel-green);
+            box-shadow: 0 0 10px var(--pixel-green);
+        }
+
+        /* Hero */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 20px 50px;
+            text-align: center;
+        }
+
+        .hero-content {
+            max-width: 1000px;
+        }
+
+        .hero h1 {
+            font-size: 4.5em;
+            color: var(--pixel-green);
+            text-shadow: 0 0 20px var(--pixel-green), 0 0 40px rgba(0, 255, 65, 0.5);
+            margin-bottom: 20px;
+            letter-spacing: 3px;
+        }
+
+        .hero .version {
+            color: var(--pixel-blue);
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+
+        .hero .tagline {
+            font-size: 1.8em;
+            color: var(--text-light);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .hero .description {
+            font-size: 1.1em;
+            color: var(--text-gray);
+            margin-bottom: 40px;
+            line-height: 1.8;
+        }
+
+        .platform-badges {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .platform-badge {
+            padding: 10px 25px;
+            border: 3px solid var(--pixel-blue);
+            color: var(--pixel-blue);
+            font-weight: bold;
+            box-shadow: 4px 4px 0 rgba(0, 212, 255, 0.3);
+            transition: all 0.3s;
+        }
+
+        .platform-badge:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 rgba(0, 212, 255, 0.5);
+        }
+
+        /* 按钮 */
+        .btn-pixel {
+            display: inline-block;
+            padding: 15px 40px;
+            margin: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #000;
+            background: var(--pixel-green);
+            border: 3px solid var(--pixel-green);
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+            box-shadow: 6px 6px 0 rgba(0, 255, 65, 0.3);
+        }
+
+        .btn-pixel:hover {
+            transform: translate(3px, 3px);
+            box-shadow: 3px 3px 0 rgba(0, 255, 65, 0.3);
+        }
+
+        .btn-pixel.secondary {
+            background: transparent;
+            color: var(--pixel-green);
+        }
+
+        /* Section */
+        .section {
+            padding: 100px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 3em;
+            color: var(--pixel-green);
+            text-align: center;
+            margin-bottom: 15px;
+            text-shadow: 0 0 15px var(--pixel-green);
+        }
+
+        .section-title::before,
+        .section-title::after {
+            content: '[ ';
+        }
+
+        .section-title::after {
+            content: ' ]';
+        }
+
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.2em;
+            color: var(--text-gray);
+            margin-bottom: 60px;
+        }
+
+        /* 功能网格 */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 3px solid var(--pixel-green);
+            padding: 35px;
+            transition: all 0.3s;
+            position: relative;
+            box-shadow: 8px 8px 0 rgba(0, 255, 65, 0.2);
+        }
+
+        .feature-card:hover {
+            transform: translate(-4px, -4px);
+            box-shadow: 12px 12px 0 rgba(0, 255, 65, 0.4);
+            border-color: var(--pixel-blue);
+        }
+
+        .feature-icon {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            display: block;
+            filter: drop-shadow(0 0 10px currentColor);
+        }
+
+        .feature-card h3 {
+            font-size: 1.8em;
+            color: var(--pixel-blue);
+            margin-bottom: 15px;
+        }
+
+        .feature-card p {
+            color: var(--text-gray);
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 20px;
+        }
+
+        .feature-list li {
+            color: var(--text-light);
+            padding: 10px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .feature-list li::before {
+            content: '▸';
+            color: var(--pixel-green);
+            font-size: 1.3em;
+            flex-shrink: 0;
+        }
+
+        /* 使用步骤 */
+        .steps {
+            counter-reset: step;
+        }
+
+        .step-item {
+            background: var(--bg-card);
+            border-left: 5px solid var(--pixel-green);
+            padding: 30px 30px 30px 80px;
+            margin: 30px 0;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .step-item::before {
+            counter-increment: step;
+            content: counter(step);
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 45px;
+            height: 45px;
+            background: var(--pixel-green);
+            color: #000;
+            font-size: 1.5em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px var(--pixel-green);
+        }
+
+        .step-item:hover {
+            border-left-width: 8px;
+            padding-left: 77px;
+        }
+
+        .step-item h3 {
+            color: var(--pixel-blue);
+            font-size: 1.6em;
+            margin-bottom: 15px;
+        }
+
+        .step-item p {
+            color: var(--text-gray);
+            line-height: 1.8;
+        }
+
+        /* 特性对比表 */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 40px 0;
+            background: var(--bg-card);
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 20px;
+            border: 2px solid var(--pixel-green);
+            text-align: left;
+        }
+
+        .comparison-table th {
+            background: var(--pixel-green);
+            color: #000;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .comparison-table tr:hover {
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .check {
+            color: var(--pixel-green);
+            font-weight: bold;
+        }
+
+        /* 会员定价 */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+
+        .pricing-card {
+            background: var(--bg-card);
+            border: 3px solid var(--text-gray);
+            padding: 35px;
+            text-align: center;
+            transition: all 0.3s;
+            box-shadow: 6px 6px 0 rgba(136, 136, 136, 0.2);
+        }
+
+        .pricing-card.featured {
+            border-color: var(--pixel-green);
+            box-shadow: 8px 8px 0 rgba(0, 255, 65, 0.3);
+            transform: scale(1.05);
+        }
+
+        .pricing-card:hover {
+            transform: scale(1.08) translate(-2px, -2px);
+        }
+
+        .pricing-card h3 {
+            font-size: 1.8em;
+            color: var(--pixel-blue);
+            margin-bottom: 15px;
+        }
+
+        .pricing-card .price {
+            font-size: 3em;
+            color: var(--pixel-green);
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .pricing-card .price small {
+            font-size: 0.4em;
+            color: var(--text-gray);
+        }
+
+        .pricing-card ul {
+            list-style: none;
+            margin: 25px 0;
+            text-align: left;
+        }
+
+        .pricing-card ul li {
+            padding: 10px 0;
+            color: var(--text-light);
+        }
+
+        .pricing-card ul li::before {
+            content: '✓ ';
+            color: var(--pixel-green);
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        /* FAQ */
+        .faq-item {
+            background: var(--bg-card);
+            border: 3px solid var(--pixel-green);
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .faq-question {
+            padding: 25px;
+            font-size: 1.2em;
+            color: var(--pixel-blue);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .faq-question:hover {
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .faq-question::after {
+            content: '▼';
+            color: var(--pixel-green);
+            font-size: 0.8em;
+        }
+
+        .faq-answer {
+            padding: 0 25px 25px;
+            color: var(--text-gray);
+            line-height: 1.8;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bg-card);
+            border-top: 3px solid var(--pixel-green);
+            padding: 60px 20px 30px;
+            margin-top: 100px;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+
+        footer h4 {
+            color: var(--pixel-green);
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        footer h4::before {
+            content: '[ ';
+        }
+
+        footer h4::after {
+            content: ' ]';
+        }
+
+        footer ul {
+            list-style: none;
+        }
+
+        footer a {
+            color: var(--text-gray);
+            text-decoration: none;
+            display: block;
+            padding: 8px 0;
+            transition: all 0.3s;
+        }
+
+        footer a:hover {
+            color: var(--pixel-green);
+            padding-left: 10px;
+        }
+
+        .copyright {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-gray);
+        }
+
+        /* 像素分隔线 */
+        .pixel-divider {
+            height: 3px;
+            background: repeating-linear-gradient(90deg, 
+                var(--pixel-green) 0px, 
+                var(--pixel-green) 10px, 
+                transparent 10px, 
+                transparent 20px
+            );
+            margin: 80px auto;
+            max-width: 800px;
+        }
+
+        /* 动画 */
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5em; }
+            .section-title { font-size: 2em; }
+            nav ul { display: none; }
+            .features-grid, .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+            .step-item {
+                padding-left: 30px;
+            }
+            .step-item::before {
+                left: -25px;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--pixel-green);
+            border: 2px solid var(--bg-dark);
+        }
+    </style>
+</head>
+<body>
+    <div class="pixel-bg"></div>
+
+    <!-- 导航栏 -->
+    <nav>
+        <div class="container">
+            <div class="logo">CE FILE MANAGER</div>
+            <ul>
+                <li><a href="#home">首页</a></li>
+                <li><a href="#features">功能</a></li>
+                <li><a href="#usage">使用方法</a></li>
+                <li><a href="#pricing">会员</a></li>
+                <li><a href="#faq">FAQ</a></li>
+                <li><a href="#download">下载</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1>CE文件管理器</h1>
+            <p class="version">VERSION 1.0.0 - PROFESSIONAL EDITION</p>
+            <p class="tagline">专业Android文件管理与逆向工程工具</p>
+            <p class="description">
+                集成文件管理、APK分析、DEX编辑、AI助手等多种强大功能<br>
+                为开发者和逆向工程师打造的全能工具
+            </p>
+            
+            <div class="platform-badges">
+                <div class="platform-badge">ANDROID 6.0+</div>
+                <div class="platform-badge">HARMONYOS 2.0+</div>
+                <div class="platform-badge">ROOT 可选</div>
+            </div>
+
+            <div>
+                <a href="#download" class="btn-pixel">立即下载</a>
+                <a href="#features" class="btn-pixel secondary">查看功能</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 核心功能 -->
+    <section id="features" class="section">
+        <h2 class="section-title">核心功能</h2>
+        <p class="section-subtitle">一个应用，替代十个专业工具</p>
+
+        <div class="features-grid">
+            <!-- 文件管理 -->
+            <div class="feature-card">
+                <span class="feature-icon">📁</span>
+                <h3>专业文件管理</h3>
+                <p>强大的双面板文件浏览器，支持30+文件格式，提供完整的文件操作功能。</p>
+                <ul class="feature-list">
+                    <li>双面板浏览，高效管理文件</li>
+                    <li>支持ZIP、RAR、7Z等压缩格式</li>
+                    <li>批量重命名、文件搜索</li>
+                    <li>回收站功能，误删恢复</li>
+                    <li>云存储同步（Google Drive、Dropbox）</li>
+                    <li>FTP/SFTP远程文件管理</li>
+                </ul>
+            </div>
+
+            <!-- APK工具 -->
+            <div class="feature-card">
+                <span class="feature-icon">📦</span>
+                <h3>APK专业工具</h3>
+                <p>完整的APK分析、修改、重打包工具链，支持主流加固脱壳。</p>
+                <ul class="feature-list">
+                    <li>APK信息查看（权限、签名、版本）</li>
+                    <li>资源提取（图片、音频、布局）</li>
+                    <li>APK反编译与重打包</li>
+                    <li>APK签名与验证</li>
+                    <li>APK多开生成器</li>
+                    <li>支持主流加固的脱壳</li>
+                </ul>
+            </div>
+
+            <!-- DEX编辑器 -->
+            <div class="feature-card">
+                <span class="feature-icon">💎</span>
+                <h3>DEX编辑器 Pro</h3>
+                <p>MT Manager风格的专业DEX编辑器，支持Java/Smali双视图编辑。</p>
+                <ul class="feature-list">
+                    <li>包树视图，结构清晰</li>
+                    <li>Java/Smali双视图编辑</li>
+                    <li>代码搜索与替换</li>
+                    <li>书签管理，快速定位</li>
+                    <li>DEX转JAR、DEX转Smali</li>
+                    <li>字符串解密与修复工具</li>
+                </ul>
+            </div>
+
+            <!-- AI助手 -->
+            <div class="feature-card">
+                <span class="feature-icon">🤖</span>
+                <h3>AI编程助手</h3>
+                <p>集成DeepSeek R1 AI模型，提供智能编程辅助和代码分析。</p>
+                <ul class="feature-list">
+                    <li>智能代码补全</li>
+                    <li>代码审查与优化建议</li>
+                    <li>自动生成代码注释</li>
+                    <li>Bug检测与修复</li>
+                    <li>自然语言编程</li>
+                    <li>代码重构建议</li>
+                </ul>
+            </div>
+
+            <!-- 代码编辑器 -->
+            <div class="feature-card">
+                <span class="feature-icon">💻</span>
+                <h3>代码编辑器</h3>
+                <p>功能完善的代码编辑器，支持多种编程语言语法高亮。</p>
+                <ul class="feature-list">
+                    <li>Kotlin、Java、Python等语法高亮</li>
+                    <li>代码折叠与自动缩进</li>
+                    <li>查找/替换功能</li>
+                    <li>行号显示</li>
+                    <li>多标签页编辑</li>
+                    <li>自定义主题配色</li>
+                </ul>
+            </div>
+
+            <!-- CE终端 -->
+            <div class="feature-card">
+                <span class="feature-icon">🖥️</span>
+                <h3>CE终端系统</h3>
+                <p>完整的Linux Shell环境，集成BusyBox，支持300+命令。</p>
+                <ul class="feature-list">
+                    <li>完整的Bash Shell环境</li>
+                    <li>BusyBox集成（300+命令）</li>
+                    <li>Root权限支持</li>
+                    <li>ANSI颜色支持</li>
+                    <li>实时命令执行</li>
+                    <li>命令历史记录</li>
+                </ul>
+            </div>
+
+            <!-- 高级工具 -->
+            <div class="feature-card">
+                <span class="feature-icon">🔧</span>
+                <h3>高级工具集</h3>
+                <p>VIP会员专享的专业工具，满足高级开发需求。</p>
+                <ul class="feature-list">
+                    <li>SO库分析工具</li>
+                    <li>十六进制编辑器</li>
+                    <li>文件加密/解密</li>
+                    <li>代码混淆工具</li>
+                    <li>内存分析器</li>
+                    <li>性能监控工具</li>
+                </ul>
+            </div>
+
+            <!-- 安全与隐私 -->
+            <div class="feature-card">
+                <span class="feature-icon">🔐</span>
+                <h3>安全与隐私</h3>
+                <p>企业级加密技术，全方位保护您的数据安全。</p>
+                <ul class="feature-list">
+                    <li>AES-256文件加密</li>
+                    <li>指纹/密码锁定</li>
+                    <li>私密空间隐藏文件</li>
+                    <li>安全删除（不可恢复）</li>
+                    <li>所有操作本地完成</li>
+                    <li>不收集用户数据</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <div class="pixel-divider"></div>
+
+    <!-- 使用方法 -->
+    <section id="usage" class="section">
+        <h2 class="section-title">使用方法</h2>
+        <p class="section-subtitle">快速上手指南</p>
+
+        <div class="steps">
+            <div class="step-item">
+                <h3>文件管理基础操作</h3>
+                <p>
+                    <strong>● 双面板浏览：</strong>左右滑动切换面板，长按文件/文件夹进入多选模式<br>
+                    <strong>● 文件操作：</strong>点击文件查看详情，长按弹出操作菜单（复制、移动、删除、重命名等）<br>
+                    <strong>● 压缩/解压：</strong>选择文件后点击压缩按钮，支持ZIP、7Z、TAR等格式<br>
+                    <strong>● 搜索文件：</strong>点击搜索图标，输入关键词，支持文件名、扩展名、内容搜索
+                </p>
+            </div>
+
+            <div class="step-item">
+                <h3>APK分析与修改</h3>
+                <p>
+                    <strong>● 查看APK信息：</strong>长按APK文件 → 选择"APK信息"查看包名、版本、权限等<br>
+                    <strong>● 提取资源：</strong>长按APK → "资源提取" → 选择需要的资源类型（图片/音频/布局）<br>
+                    <strong>● 反编译APK：</strong>长按APK → "反编译" → 等待完成 → 在反编译文件夹中修改<br>
+                    <strong>● 重打包签名：</strong>修改完成后 → "重打包" → "签名" → 生成新的APK
+                </p>
+            </div>
+
+            <div class="step-item">
+                <h3>DEX代码编辑</h3>
+                <p>
+                    <strong>● 打开DEX文件：</strong>点击.dex文件 → 自动进入DEX编辑器 → 包树视图展示<br>
+                    <strong>● 浏览代码：</strong>点击包名展开 → 选择类文件 → 查看Java/Smali代码<br>
+                    <strong>● 编辑代码：</strong>点击"编辑"按钮 → 修改代码 → 保存 → 自动重新编译<br>
+                    <strong>● 搜索功能：</strong>点击搜索 → 输入类名/方法名/字符串 → 快速定位代码位置
+                </p>
+            </div>
+
+            <div class="step-item">
+                <h3>AI助手使用</h3>
+                <p>
+                    <strong>● 代码分析：</strong>选中代码段 → 右键菜单 → "AI分析" → 查看AI给出的代码解释<br>
+                    <strong>● 代码生成：</strong>输入功能描述 → 点击"AI生成" → AI自动生成代码<br>
+                    <strong>● Bug修复：</strong>选中错误代码 → "AI修复" → AI提供修复建议<br>
+                    <strong>● 代码优化：</strong>选中代码 → "AI优化" → 获取性能优化建议
+                </p>
+            </div>
+
+            <div class="step-item">
+                <h3>终端命令使用</h3>
+                <p>
+                    <strong>● 打开终端：</strong>侧边栏 → "CE终端" → 进入Shell环境<br>
+                    <strong>● 基础命令：</strong>支持ls、cd、cp、mv、rm等300+Linux命令<br>
+                    <strong>● Root操作：</strong>输入"su"获取Root权限 → 执行系统级命令<br>
+                    <strong>● 快捷操作：</strong>长按终端 → 选择常用命令模板 → 一键执行
+                </p>
+            </div>
+
+            <div class="step-item">
+                <h3>高级功能使用（VIP）</h3>
+                <p>
+                    <strong>● SO库分析：</strong>长按.so文件 → "SO分析" → 查看符号表、导出函数等<br>
+                    <strong>● 十六进制编辑：</strong>任意文件 → "十六进制编辑" → 修改二进制数据<br>
+                    <strong>● 文件加密：</strong>选择文件 → "加密" → 设置密码 → AES-256加密<br>
+                    <strong>● 代码混淆：</strong>选择Java/Smali文件 → "混淆" → 自动混淆代码
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <div class="pixel-divider"></div>
+
+    <!-- 会员定价 -->
+    <section id="pricing" class="section">
+        <h2 class="section-title">会员定价</h2>
+        <p class="section-subtitle">选择适合您的方案</p>
+
+        <div class="pricing-grid">
+            <!-- 体验会员 -->
+            <div class="pricing-card">
+                <h3>体验会员</h3>
+                <div class="price">免费<small>/7天</small></div>
+                <ul>
+                    <li>所有功能完全开放</li>
+                    <li>APK反编译/重打包</li>
+                    <li>DEX编辑器完整版</li>
+                    <li>AI助手无限制使用</li>
+                    <li>SO库分析工具</li>
+                    <li>十六进制编辑器</li>
+                    <li>文件加密/解密</li>
+                </ul>
+                <a href="#download" class="btn-pixel secondary">立即体验</a>
+            </div>
+
+            <!-- 月度会员 -->
+            <div class="pricing-card">
+                <h3>月度会员</h3>
+                <div class="price">¥5<small>/月</small></div>
+                <ul>
+                    <li>所有功能完全开放</li>
+                    <li>APK反编译/重打包</li>
+                    <li>DEX编辑器完整版</li>
+                    <li>AI助手无限制使用</li>
+                    <li>SO库分析工具</li>
+                    <li>十六进制编辑器</li>
+                    <li>文件加密/解密</li>
+                </ul>
+                <a href="#download" class="btn-pixel">立即购买</a>
+            </div>
+
+            <!-- 年度会员 -->
+            <div class="pricing-card featured">
+                <h3>年度会员 🔥</h3>
+                <div class="price">¥40<small>/年</small></div>
+                <ul>
+                    <li>所有功能完全开放</li>
+                    <li>APK反编译/重打包</li>
+                    <li>DEX编辑器完整版</li>
+                    <li>AI助手无限制使用</li>
+                    <li>SO库分析工具</li>
+                    <li>优先技术支持</li>
+                    <li>节省33%</li>
+                </ul>
+                <a href="#download" class="btn-pixel">最超值</a>
+            </div>
+
+            <!-- 永久会员 -->
+            <div class="pricing-card">
+                <h3>永久会员</h3>
+                <div class="price">¥88<small>/终身</small></div>
+                <ul>
+                    <li>所有功能完全开放</li>
+                    <li>终身免费更新</li>
+                    <li>所有新功能优先体验</li>
+                    <li>一对一技术支持</li>
+                    <li>VIP专属功能</li>
+                    <li>一次购买永久使用</li>
+                    <li>超值推荐</li>
+                </ul>
+                <a href="#download" class="btn-pixel">一劳永逸</a>
+            </div>
+        </div>
+
+        <!-- 功能对比表 -->
+        <h3 style="text-align: center; color: var(--pixel-blue); font-size: 2em; margin-top: 80px; margin-bottom: 30px;">功能对比表</h3>
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>功能</th>
+                    <th>体验会员</th>
+                    <th>月度会员</th>
+                    <th>年度会员</th>
+                    <th>永久会员</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>所有核心功能</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                </tr>
+                <tr>
+                    <td>APK反编译/重打包</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                </tr>
+                <tr>
+                    <td>DEX编辑器完整版</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                </tr>
+                <tr>
+                    <td>AI编程助手</td>
+                    <td class="check">无限制</td>
+                    <td class="check">无限制</td>
+                    <td class="check">无限制</td>
+                    <td class="check">无限制</td>
+                </tr>
+                <tr>
+                    <td>CE终端完整功能</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                </tr>
+                <tr>
+                    <td>SO库分析工具</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                </tr>
+                <tr>
+                    <td>十六进制编辑</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                </tr>
+                <tr>
+                    <td>文件加密/解密</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                    <td class="check">✓</td>
+                </tr>
+                <tr>
+                    <td>使用期限</td>
+                    <td>7天</td>
+                    <td>1个月</td>
+                    <td>1年</td>
+                    <td class="check">终身</td>
+                </tr>
+                <tr>
+                    <td>技术支持</td>
+                    <td>社区</td>
+                    <td>邮件</td>
+                    <td>优先支持</td>
+                    <td class="check">一对一</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <div class="pixel-divider"></div>
+
+    <!-- FAQ -->
+    <section id="faq" class="section">
+        <h2 class="section-title">常见问题</h2>
+        <p class="section-subtitle">FAQ - Frequently Asked Questions</p>
+
+        <div class="faq-item">
+            <div class="faq-question">Q: CE文件管理器需要Root权限吗？</div>
+            <div class="faq-answer">
+                A: 不需要。大部分功能都可以在非Root环境下使用。只有少数高级功能（如系统文件访问、APK提取等）需要Root权限，并且会在使用前明确提示。您可以根据需要选择是否授予Root权限。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">Q: 我的数据安全吗？</div>
+            <div class="faq-answer">
+                A: 绝对安全。CE文件管理器的所有操作都在本地完成，不会上传您的文件到服务器。我们采用AES-256企业级加密技术保护您的敏感文件，并且不会收集任何用户数据或隐私信息。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">Q: 如何激活会员？</div>
+            <div class="faq-answer">
+                A: 在应用内点击"会员中心" → 选择您需要的会员类型 → 通过Google Play完成支付 → 自动激活。体验会员可以直接在应用内一键激活，无需支付。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">Q: APK反编译后如何重打包？</div>
+            <div class="faq-answer">
+                A: 反编译后修改完成 → 长按反编译文件夹 → 选择"重打包" → 等待编译完成 → 自动签名 → 在输出目录找到新的APK文件。整个过程全自动完成，无需手动操作。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">Q: AI助手支持哪些功能？</div>
+            <div class="faq-answer">
+                A: AI助手基于DeepSeek R1模型，支持代码分析、代码生成、Bug检测、代码优化、自然语言编程等功能。您可以用自然语言描述需求，AI会自动生成相应的代码，大幅提升开发效率。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">Q: 支持哪些文件格式？</div>
+            <div class="faq-answer">
+                A: 支持30+种文件格式，包括：APK、DEX、JAR、SO、ZIP、RAR、7Z、TAR、GZ、TXT、XML、JSON、Java、Kotlin、Python、C/C++、Shell、Markdown等。图片、音频、视频等多媒体文件也可以直接预览。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">Q: 如何联系技术支持？</div>
+            <div class="faq-answer">
+                A: 您可以通过以下方式联系我们：<br>
+                ● 邮件：support@cefilemanager.com<br>
+                ● GitHub Issues：提交问题和建议<br>
+                ● Discord社区：与其他用户交流<br>
+                年度会员和永久会员享有优先技术支持服务。
+            </div>
+        </div>
+    </section>
+
+    <!-- 下载 -->
+    <section id="download" class="section" style="text-align: center;">
+        <h2 class="section-title">立即下载</h2>
+        <p class="section-subtitle">开始您的专业之旅</p>
+
+        <div style="margin: 50px 0;">
+            <a href="#" class="btn-pixel" style="font-size: 1.3em; padding: 20px 50px;">
+                Google Play 下载
+            </a>
+            <a href="#" class="btn-pixel secondary" style="font-size: 1.3em; padding: 20px 50px;">
+                GitHub 下载
+            </a>
+        </div>
+
+        <div class="platform-badges" style="justify-content: center; margin-top: 40px;">
+            <div class="platform-badge">Android 6.0+</div>
+            <div class="platform-badge">HarmonyOS 2.0+</div>
+            <div class="platform-badge">20+ MB</div>
+            <div class="platform-badge">支持中文/English</div>
+        </div>
+
+        <p style="color: var(--text-gray); margin-top: 40px; font-size: 1.1em;">
+            版本 1.0.0 | 更新日期 2024-11-04<br>
+            支持 Android 6.0+ / HarmonyOS 2.0+
+        </p>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div>
+                <h4>CE文件管理器</h4>
+                <p style="color: var(--text-gray); line-height: 1.8;">
+                    专业的Android文件管理<br>
+                    与逆向工程工具<br>
+                    让开发变得更简单
+                </p>
+            </div>
+
+            <div>
+                <h4>产品</h4>
+                <ul>
+                    <li><a href="#features">功能介绍</a></li>
+                    <li><a href="#usage">使用方法</a></li>
+                    <li><a href="#pricing">会员定价</a></li>
+                    <li><a href="#download">下载应用</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4>资源</h4>
+                <ul>
+                    <li><a href="#">使用文档</a></li>
+                    <li><a href="#">视频教程</a></li>
+                    <li><a href="#">API文档</a></li>
+                    <li><a href="#">更新日志</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4>联系</h4>
+                <ul>
+                    <li><a href="#">support@cefilemanager.com</a></li>
+                    <li><a href="#">GitHub</a></li>
+                    <li><a href="#">Discord</a></li>
+                    <li><a href="#">隐私政策</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="copyright">
+            <p>© 2024 CE文件管理器 - 像素引擎 Pixel Engine</p>
+            <p style="margin-top: 10px;">专业工具 · 简洁设计 · 强大功能</p>
+        </div>
+    </footer>
+
+    <script>
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // FAQ折叠
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', function() {
+                const answer = this.nextElementSibling;
+                const isVisible = answer.style.display === 'block';
+                
+                // 关闭所有其他FAQ
+                document.querySelectorAll('.faq-answer').forEach(a => a.style.display = 'none');
+                
+                // 切换当前FAQ
+                answer.style.display = isVisible ? 'none' : 'block';
+            });
+        });
+
+        // 默认隐藏所有答案
+        document.querySelectorAll('.faq-answer').forEach(answer => {
+            answer.style.display = 'none';
+        });
+
+        // 滚动动画
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'float 3s ease-in-out infinite';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.feature-card, .pricing-card').forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>
